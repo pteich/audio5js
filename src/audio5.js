@@ -177,7 +177,7 @@
         var mp3_callback_status = null;
         switch (mime_type) {
             case 'mp3':
-                mime_str = 'audio/mpeg; codecs="mp3"';
+                mime_str = 'audio/mpeg;';
                 this.can_play_audiomp3(function(status) {
                     mp3_callback_status = status;
                 });
