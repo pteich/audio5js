@@ -218,19 +218,20 @@
               var audio = new Audio();
               //Shortcut which doesn't work in Chrome (always returns ""); pass through
               // if "maybe" to do asynchronous check by loading MP3 data: URI
-              if(audio.canPlayType('audio/mpeg') == "probably")
+              if(audio.canPlayType('audio/mpeg') === "probably") {
                   callback(true);
+              }
 
-              audio.addEventListener('canplaythrough', function(e){
-                  callback(true);
-              }, false);
-
-              audio.addEventListener('loadedmetadata', function(e){
+              audio.addEventListener('canplaythrough', function() {
                   callback(true);
               }, false);
 
-              audio.addEventListener('error', function(e){
-                  callback(false, this.error)
+              audio.addEventListener('loadedmetadata', function() {
+                  callback(true);
+              }, false);
+
+              audio.addEventListener('error', function() {
+                  callback(false, this.error);
               }, false);
 
               audio.src = "data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";

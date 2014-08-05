@@ -172,34 +172,76 @@
      * @return {Boolean} whether browser supports passed audio mime type
      */
     can_play: function (mime_type) {
-      var a = document.createElement('audio');
-      var mime_str;
-      switch (mime_type) {
-      case 'mp3':
-        mime_str = 'audio/mpeg; codecs="mp3"';
-        break;
-      case 'vorbis':
-        mime_str = 'audio/ogg; codecs="vorbis"';
-        break;
-      case 'opus':
-        mime_str = 'audio/ogg; codecs="opus"';
-        break;
-      case 'webm':
-        mime_str = 'audio/webm; codecs="vorbis"';
-        break;
-      case 'mp4':
-        mime_str = 'audio/mp4; codecs="mp4a.40.5"';
-        break;
-      case 'wav':
-        mime_str = 'audio/wav; codecs="1"';
-        break;
-      }
-      if (mime_str === undefined) {
-        throw new Error('Unspecified Audio Mime Type');
-      } else {
-        return !!a.canPlayType && a.canPlayType(mime_str) !== '';
-      }
+        var a = document.createElement('audio');
+        var mime_str;
+        var mp3_callback_status = null;
+        switch (mime_type) {
+            case 'mp3':
+                mime_str = 'audio/mpeg;';
+                this.can_play_audiomp3(function(status) {
+                    mp3_callback_status = status;
+                });
+                break;
+            case 'vorbis':
+                mime_str = 'audio/ogg; codecs="vorbis"';
+                break;
+            case 'opus':
+                mime_str = 'audio/ogg; codecs="opus"';
+                break;
+            case 'webm':
+                mime_str = 'audio/webm; codecs="vorbis"';
+                break;
+            case 'mp4':
+                mime_str = 'audio/mp4; codecs="mp4a.40.5"';
+                break;
+            case 'wav':
+                mime_str = 'audio/wav; codecs="1"';
+                break;
+        }
+        if (mime_str === undefined) {
+            throw new Error('Unspecified Audio Mime Type');
+        } else {
+            // mp3 canplaythrough check ist asynchronous and hopefully done until we return
+            if (mime_type === 'mp3' && mp3_callback_status !== null) {
+                return mp3_callback_status;
+            }
+            return !!a.canPlayType && (a.canPlayType(mime_str) !== '');
+        }
     },
+
+      /**
+       * MP3-Check from https://gist.github.com/westonruter/253174
+       * @param callback
+       */
+      can_play_audiomp3: function(callback) {
+          try {
+              var audio = new Audio();
+              //Shortcut which doesn't work in Chrome (always returns ""); pass through
+              // if "maybe" to do asynchronous check by loading MP3 data: URI
+              if(audio.canPlayType('audio/mpeg') === "probably") {
+                  callback(true);
+              }
+
+              audio.addEventListener('canplaythrough', function() {
+                  callback(true);
+              }, false);
+
+              audio.addEventListener('loadedmetadata', function() {
+                  callback(true);
+              }, false);
+
+              audio.addEventListener('error', function() {
+                  callback(false, this.error);
+              }, false);
+
+              audio.src = "data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+              audio.load();
+          }
+          catch(e){
+              callback(false, e);
+          }
+      },
+
     /**
      * Boolean flag indicating whether the browser has Flash installed or not
      */
