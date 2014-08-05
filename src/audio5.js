@@ -174,9 +174,13 @@
     can_play: function (mime_type) {
       var a = document.createElement('audio');
       var mime_str;
+      var mp3_callback_status = null;
       switch (mime_type) {
       case 'mp3':
-        mime_str = 'audio/mpeg; codecs="mp3"';
+        //mime_str = 'audio/mpeg; codecs="mp3"';
+        this.can_play_audiomp3(function(status) {
+            mp3_callback_status = status;
+        });
         break;
       case 'vorbis':
         mime_str = 'audio/ogg; codecs="vorbis"';
@@ -197,9 +201,38 @@
       if (mime_str === undefined) {
         throw new Error('Unspecified Audio Mime Type');
       } else {
-        return !!a.canPlayType && a.canPlayType(mime_str) !== '';
+        return !!a.canPlayType && (mp3_callback_status a.canPlayType(mime_str) !== '');
       }
     },
+
+    can_play_audiomp3: function(callback) {
+        try {
+            var audio = new Audio();
+            //Shortcut which doesn't work in Chrome (always returns ""); pass through
+            // if "maybe" to do asynchronous check by loading MP3 data: URI
+            if(audio.canPlayType('audio/mpeg') == "probably")
+                callback(true);
+
+            audio.addEventListener('canplaythrough', function(e){
+                callback(true);
+            }, false);
+
+            audio.addEventListener('loadedmetadata', function(e){
+                callback(true);
+            }, false);
+
+            audio.addEventListener('error', function(e){
+                callback(false, this.error)
+            }, false);
+
+            audio.src = "data:audio/mpeg;base64,/+MYxAAAAANIAAAAAExBTUUzLjk4LjIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+            audio.load();
+        }
+        catch(e){
+            callback(false, e);
+        }
+    },
+
     /**
      * Boolean flag indicating whether the browser has Flash installed or not
      */
