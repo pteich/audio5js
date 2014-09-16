@@ -538,6 +538,9 @@
     destroyAudio: function(){
       if(this.audio){
         this.unbindEvents();
+        this.audio.setAttribute('src', '');
+        this.audio.load();
+        this.audio = undefined;
         delete this.audio;
       }
     },
