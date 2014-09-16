@@ -709,6 +709,17 @@
     pause: function () {
       this.audio.pause();
     },
+
+    /**
+     * Stop audio - pause + stop loading streams and destroy audio
+     * to start again calling load() with a proper url is necessary
+     */
+    stop: function () {
+        this.audio.pause();
+        this.reset();
+        this.destroyAudio();
+    },
+
     /**
      * Get / Set audio volume
      * @param {Float} v audio volume to set between 0 - 1.
