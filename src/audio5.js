@@ -482,6 +482,14 @@
       this.audio.ppause();
     },
     /**
+     * stop audio
+     */
+    stop: function () {
+      this.reset();
+      this.audio.ppause();
+    },
+
+    /**
      * Get / Set audio volume
      * @param {Float} v audio volume to set between 0 - 1.
      * @return {Float} current audio volume
@@ -899,6 +907,16 @@
         this.audio.pause();
       }
     },
+
+    /**
+     * Stop audio
+     */
+    stop: function () {
+      if(this.playing){
+          this.audio.stop();
+      }
+    },
+
     /**
      * Toggle audio play / pause
      */
