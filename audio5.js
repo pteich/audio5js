@@ -153,7 +153,7 @@
     /**
      * Flash embed code string with cross-browser support.
      */
-	flash_embed_code: function (id, swf_location, ts) {
+  flash_embed_code: function (id, swf_location, ts) {
       var prefix;
       var s = '<param name="movie" value="' + swf_location + '?playerInstance=window.' + ns + '_flash.instances[\'' + id + '\']&datetime=' + ts + '/>' +
         '<param name="wmode" value="transparent"/>' +
@@ -403,9 +403,13 @@
     /**
      * ExternalInterface download progress callback. Fires as long as audio file is downloaded by browser.
      * @param {Float} percent audio download percent
+     * @param {Float} duration audio total duration (sec)
+     * * @param {Boolean} seekable is audio seekable or not (download or streaming)
      */
-    eiProgress: function (percent) {
+    eiProgress: function (percent, duration, seekable) {
       this.load_percent = percent;
+      this.duration = duration;
+      this.seekable = seekable;
       this.trigger('progress', percent);
     },
     /**
@@ -534,6 +538,9 @@
     destroyAudio: function(){
       if(this.audio){
         this.unbindEvents();
+        this.audio.setAttribute('src', '');
+        this.audio.load();
+        this.audio = undefined;
         delete this.audio;
       }
     },
@@ -618,9 +625,11 @@
      * Audio timeupdate event handler. Triggered as long as playhead position is updated (audio is being played).
      */
     onTimeUpdate: function () {
-      if (this.audio && this.audio.buffered !== null && this.audio.buffered.length && this.playing) {
-        this.position = this.audio.currentTime;
-        this.duration = this.audio.duration === Infinity ? null : this.audio.duration;
+      if (this.audio && this.playing) {
+        try{
+          this.position = this.audio.currentTime;
+          this.duration = this.audio.duration === Infinity ? null : this.audio.duration;
+        } catch (e){}
         this.trigger('timeupdate', this.position, this.duration);
       }
     },
@@ -631,7 +640,8 @@
      */
     onProgress: function () {
       if (this.audio && this.audio.buffered !== null && this.audio.buffered.length) {
-        this.load_percent = parseInt(((this.audio.buffered.end(this.audio.buffered.length - 1) / this.audio.duration) * 100), 10);
+        this.duration = this.audio.duration === Infinity ? null : this.audio.duration;
+        this.load_percent = parseInt(((this.audio.buffered.end(this.audio.buffered.length - 1) / this.duration) * 100), 10);
         this.trigger('progress', this.load_percent);
         if (this.load_percent >= 100) {
           this.clearLoadProgress();
@@ -699,6 +709,17 @@
     pause: function () {
       this.audio.pause();
     },
+
+    /**
+     * Stop audio - pause + stop loading streams and destroy audio
+     * to start again calling load() with a proper url is necessary
+     */
+    stop: function () {
+        this.audio.pause();
+        this.reset();
+        this.destroyAudio();
+    },
+
     /**
      * Get / Set audio volume
      * @param {Float} v audio volume to set between 0 - 1.
@@ -995,6 +1016,7 @@
      * @param {Float} loaded audio download percent
      */
     onProgress: function (loaded) {
+      this.duration = this.audio.duration;
       this.load_percent = loaded;
       this.trigger('progress', loaded);
     }
