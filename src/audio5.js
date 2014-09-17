@@ -546,6 +546,7 @@
     destroyAudio: function(){
       if(this.audio){
         this.unbindEvents();
+        this.audio.addEventListener('error', this.trigger('destroyed'), false);
         this.audio.setAttribute('src', '');
         this.audio.load();
         this.audio = undefined;
@@ -699,11 +700,13 @@
      * @param {String} url URL of audio to load
      */
     load: function (url) {
-      this.reset();
-      this.destroyAudio();
-      this.createAudio();
-      this.audio.setAttribute('src', url);
-      this.audio.load();
+        this.reset();
+        this.destroyAudio();
+
+        this.createAudio();
+        this.audio.setAttribute('src', url);
+        this.audio.load();
+        this.trigger('canplay');
     },
     /**
      * Play audio
@@ -724,8 +727,11 @@
      */
     stop: function () {
         this.audio.pause();
-        this.reset();
-        this.destroyAudio();
+        var that = this;
+        this.audio.addEventListener('pause', function() {
+            that.reset();
+            that.destroyAudio();
+        }, false);
     },
 
     /**
