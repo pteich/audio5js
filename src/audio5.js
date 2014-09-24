@@ -524,6 +524,9 @@
   HTML5AudioPlayer = function () {};
 
   HTML5AudioPlayer.prototype = {
+
+    destroying: false,
+
     /**
      * Initialize the player instance
      */
@@ -544,12 +547,20 @@
      * Destroy current audio instance
      */
     destroyAudio: function(){
-      if(this.audio){
+       if(this.audio) {
+
+        this.destroying=true;
         this.unbindEvents();
-        this.audio.addEventListener('error', this.trigger('destroyed'), false);
+        var that = this;
+
+        this.audio.addEventListener('error', function() {
+            that.trigger('destroyed');
+            that.destroying=false;
+        }, false);
+
         this.audio.setAttribute('src', '');
         this.audio.load();
-        this.audio = undefined;
+        this.audio = null;
         delete this.audio;
       }
     },
@@ -662,7 +673,9 @@
      * @param e error event
      */
     onError: function (e) {
-      this.trigger('error', e);
+      if(!this.destroying) {
+        this.trigger('error', e);
+      }
     },
     /**
      * Audio seeking event handler. Triggered when audio seek starts.
