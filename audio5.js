@@ -198,6 +198,12 @@
                 mime_str = 'audio/wav; codecs="1"';
                 break;
         }
+      if (mime_str !== undefined) {
+        if (mime_type === 'mp3' && navigator.userAgent.match(/Android/i) && navigator.userAgent.match(/Firefox/i)) {
+          return true;
+        }
+        return !!a.canPlayType && a.canPlayType(mime_str) !== '';
+      }      
         if (mime_str === undefined) {
             throw new Error('Unspecified Audio Mime Type');
         } else {
@@ -511,6 +517,17 @@
         this.audio.seekTo(position);
         this.position = position;
       } catch (e) {}
+    },
+    /**
+     * Destroy audio object and remove from DOM
+     */
+    destroyAudio: function() {
+      if(this.audio){
+        this.pause();
+        this.audio.parentNode.removeChild(this.audio);
+        delete globalAudio5Flash.instances[this.id];
+        delete this.audio;
+      }
     }
   };
 
@@ -524,9 +541,6 @@
   HTML5AudioPlayer = function () {};
 
   HTML5AudioPlayer.prototype = {
-
-    destroying: false,
-
     /**
      * Initialize the player instance
      */
@@ -547,20 +561,13 @@
      * Destroy current audio instance
      */
     destroyAudio: function(){
-       if(this.audio) {
-
-        this.destroying=true;
+      if(this.audio){
+        this.pause();
         this.unbindEvents();
-        var that = this;
-
-        this.audio.addEventListener('error', function() {
-            that.trigger('destroyed');
-            that.destroying=false;
-        }, false);
-
+        this.audio.addEventListener('error', this.trigger('destroyed'), false);
         this.audio.setAttribute('src', '');
         this.audio.load();
-        this.audio = null;
+        this.audio = undefined;
         delete this.audio;
       }
     },
@@ -673,9 +680,7 @@
      * @param e error event
      */
     onError: function (e) {
-      if(!this.destroying) {
-        this.trigger('error', e);
-      }
+      this.trigger('error', e);
     },
     /**
      * Audio seeking event handler. Triggered when audio seek starts.
@@ -733,7 +738,6 @@
     pause: function () {
       this.audio.pause();
     },
-
     /**
      * Stop audio - pause + stop loading streams and destroy audio
      * to start again calling load() with a proper url is necessary
@@ -852,27 +856,35 @@
      * @return {FlashAudioPlayer,HTML5AudioPlayer} audio player instance
      */
     getPlayer: function () {
-      var i, l, player;
-      for (i = 0, l = this.settings.codecs.length; i < l; i++) {
-        var codec = this.settings.codecs[i];
-        if (Audio5js.can_play(codec)) {
-          player = new HTML5AudioPlayer();
-          this.settings.use_flash = false;
-          this.settings.player = {
-            engine: 'html',
-            codec: codec
-          };
-          break;
-        }
-      }
-      if (player === undefined) {
-        // here we double check for mp3 support instead of defaulting to Flash in case user overrode the settings.codecs array with an empty array.
-        this.settings.use_flash = !Audio5js.can_play('mp3');
-        player = this.settings.use_flash ? new FlashAudioPlayer() : new HTML5AudioPlayer();
+      var i, l, player, codec;
+      if(this.settings.use_flash){
+        player = new FlashAudioPlayer();
         this.settings.player = {
-          engine: (this.settings.use_flash ? 'flash' : 'html'),
+          engine: 'flash',
           codec: 'mp3'
         };
+      } else {
+        for (i = 0, l = this.settings.codecs.length; i < l; i++) {
+          codec = this.settings.codecs[i];
+          if (Audio5js.can_play(codec)) {
+            player = new HTML5AudioPlayer();
+            this.settings.use_flash = false;
+            this.settings.player = {
+              engine: 'html',
+              codec: codec
+            };
+            break;
+          }
+        }
+        if (player === undefined) {
+          // here we double check for mp3 support instead of defaulting to Flash in case user overrode the settings.codecs array with an empty array.
+          this.settings.use_flash = !Audio5js.can_play('mp3');
+          player = this.settings.use_flash ? new FlashAudioPlayer() : new HTML5AudioPlayer();
+          this.settings.player = {
+            engine: (this.settings.use_flash ? 'flash' : 'html'),
+            codec: 'mp3'
+          };
+        }
       }
       return player;
     },
@@ -962,6 +974,12 @@
     seek: function (position) {
       this.audio.seek(position);
       this.position = position;
+    },
+    /**
+     * Destroy audio object and remove from DOM
+     */
+    destroy: function() {
+      this.audio.destroyAudio();
     },
     /**
      * Callback for audio ready event. Indicates audio is ready for playback.
