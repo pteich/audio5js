@@ -680,7 +680,9 @@
      * @param e error event
      */
     onError: function (e) {
-      this.trigger('error', e);
+      if (e.target.currentSrc && e.target.currentSrc!=='') {
+        this.trigger('error', e);
+      }
     },
     /**
      * Audio seeking event handler. Triggered when audio seek starts.
