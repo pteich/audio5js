@@ -545,6 +545,8 @@
      * Initialize the player instance
      */
     init: function () {
+      // Flag to mark if currently destroying an existing audio object
+      this.destroying = false;
       this.trigger('ready');
     },
     /**
@@ -562,6 +564,7 @@
      */
     destroyAudio: function(){
       if(this.audio){
+        this.destroying = true;
         this.pause();
         this.unbindEvents();
         this.audio.addEventListener('error', this.trigger('destroyed'), false);
@@ -680,7 +683,10 @@
      * @param e error event
      */
     onError: function (e) {
-      if (e.target.currentSrc && e.target.currentSrc!=='') {
+      // Check if we are destroying an existing audio object, if this is the case don't trigger an error on trying to load an empty source
+      if (this.destroying) {
+        this.destroying = false;
+      } else {
         this.trigger('error', e);
       }
     },
