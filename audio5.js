@@ -740,6 +740,7 @@
      */
     load: function (url) {
       this.reset();
+      this.trigger('pause');
       //this.destroyAudio();
       if(this.audio === undefined){
         this.createAudio();
